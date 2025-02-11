@@ -62,3 +62,4 @@ Este proyecto está bajo la licencia **MIT**.
 - [Juan Gutiérrez](https://github.com/JuanGutierrez26)
 - [Smith Lozano](https://github.com/SmithMD01)
 - [Benjamin Chang](https://github.com/Benjacho1334)
+- [Tiana Pardo](https://github.com/tpardo20)
