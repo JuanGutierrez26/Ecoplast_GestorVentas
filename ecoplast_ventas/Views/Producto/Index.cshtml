@@ -1,0 +1,403 @@
+﻿@model ecoplast_ventas.Models.Producto
+
+@{
+    ViewData["Title"] = "Producto";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+@section EstiloDT {
+    <link rel="stylesheet" href="~/lib/datatables.net/css/jquery.dataTables.min.css" />
+}
+
+<hr />
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Tabla Producto</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <td>@Html.DisplayNameFor(pro => pro.id_producto)</td>
+                        <td>@Html.DisplayNameFor(pro => pro.nombre)</td>
+                        <td>@Html.DisplayNameFor(pro => pro.descripcion)</td>
+                        <td>@Html.DisplayNameFor(pro => pro.precio)</td>
+                        <td>@Html.DisplayNameFor(pro => pro.stock)</td>
+                        <td>@Html.DisplayNameFor(pro => pro.id_marca)</td>
+                        <td>@Html.DisplayNameFor(pro => pro.id_proveedor)</td>
+                        <td>@Html.DisplayNameFor(pro => pro.id_categoria)</td>
+                        <td>Acciones</td>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="FormularioCategoria" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <form>
+                            <div class="form-group">
+                                <label asp-for="id_producto" class="control-label"></label>
+                                <input asp-for="id_producto" class="form-control" />
+                                <span asp-validation-for="id_producto" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="nombre" class="control-label"></label>
+                                <input asp-for="nombre" id="nombre" class="form-control" />
+                                <span asp-validation-for="nombre" class="text-danger"></span>
+                            </div>
+
+
+                            <div class="form-group">
+                                <label asp-for="descripcion" class="control-label"></label>
+                                <input asp-for="descripcion" class="form-control" />
+                                <span asp-validation-for="descripcion" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="precio" class="control-label"></label>
+                                <input asp-for="precio" class="form-control" />
+                                <span asp-validation-for="precio" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label asp-for="stock" class="control-label"></label>
+                                <input asp-for="stock" class="form-control" />
+                                <span asp-validation-for="stock" class="text-danger"></span>
+                            </div>
+
+                            <!-- Dropdown para Marca dentro de un form-group -->
+                            <div class="form-group">
+                                <label for="marcaDropdown" class="control-label">Marca</label>
+                                <select id="marcaDropdown" class="form-control">
+                                    <option value="">Seleccione una marca</option>
+                                    <!-- Las opciones se agregarán aquí mediante JavaScript -->
+                                </select>
+                                <span asp-validation-for="id_marca" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="proveedorDropdown" class="control-label">Proveedor</label>
+                                <select id="proveedorDropdown" class="form-control">
+                                    <option value="">Seleccione un proveedor</option>
+                                    <!-- Las opciones se agregarán aquí mediante JavaScript -->
+                                </select>
+                                <span asp-validation-for="id_proveedor" class="text-danger"></span>
+                            </div>
+
+                            <div class="form-group">
+                                <label for="categoriaDropdown" class="control-label">Categoría</label>
+                                <select id="categoriaDropdown" class="form-control">
+                                    <option value="">Seleccione una categoría</option>
+                                    <!-- Las opciones se agregarán aquí mediante JavaScript -->
+                                </select>
+                                <span asp-validation-for="id_categoria" class="text-danger"></span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn_cerrar" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn_grabar" class="btn btn-outline-primary"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="~/lib/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/lib/datatables.net/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        $(document).ready(function () {
+            // Cargar la tabla de productos
+            $("#dataTable").DataTable({
+                "ajax": {
+                    "url": "@Url.Action("Listar", "Producto")", // Ruta del controlador
+                    "type": "GET",
+                    "dataType": "json"
+                },
+                "columns": [
+                    { "data": "id_producto" },
+                    { "data": "nombre" },
+                    { "data": "descripcion" },
+                    { "data": "precio" },
+                    { "data": "stock" },
+                    { "data": "id_marca" },
+                    { "data": "id_proveedor" },
+                    { "data": "id_categoria" },
+                    {
+                        "data": "id_producto", "render": function (data) {
+                            return "<button class='btn btn-outline-success' type='button' onclick='AbrirRegistro(\"" + data + "\")'><i class='fas fa-edit'></i></button>" +
+                                "<button class='btn btn-outline-danger' type='button' onclick='Eliminar(\"" + data + "\")'> <i class='fas fa-trash-alt'></i></button>"
+                        },
+                    }
+                ],
+                "order": [[0, "asc"]],
+                dom: "Bfrtip",
+                buttons: [
+                    {
+                        text: "Registrar Producto",
+                        attr: { class: "btn btn-outline-primary" },
+                        action: function () {
+                            AbrirRegistro("")
+                        }
+                    },
+                    {
+                        extend: "excelHtml5",
+                        text: '<i class="fas fa-file-excel"></i> Exportar a Excel',
+                        attr: { class: "btn btn-success" },
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4, 5, 6, 7] // Exporta las columnas de id_categoria y nombre
+                        }
+                    },
+                    {
+                        extend: "pdfHtml5",
+                        text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
+                        attr: { class: "btn btn-danger" },
+                        exportOptions: {
+                            columns: [0, 1, 2, 3, 4, 5, 6, 7] // Exporta las columnas de id_categoria y nombre
+                        }
+                    }
+                ]
+            });
+
+            // Cargar las marcas en el dropdown
+            $.ajax({
+                url: '@Url.Action("Listar", "Producto")', // Ruta para obtener las marcas
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    if (response.data2 && response.data2.length > 0) {
+                        var marcaDropdown = $('#marcaDropdown'); // Suponiendo que el dropdown tiene el ID marcaDropdown
+                        marcaDropdown.empty(); // Limpiar cualquier opción anterior
+                        marcaDropdown.append('<option value="">Seleccione una marca</option>'); // Opción por defecto
+
+                        // Recorrer las marcas y agregar las opciones
+                        response.data2.forEach(function (marca) {
+                            marcaDropdown.append('<option value="' + marca.id_marca + '">' + marca.nombre + '</option>');
+                        });
+                    }
+                },
+                error: function () {
+                    alert('Error al cargar las marcas.');
+                }
+            });
+
+            // Cargar los proveedores en el dropdown
+            $.ajax({
+                url: '@Url.Action("Listar", "Producto")', // Ruta para obtener los proveedores
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    if (response.data3 && response.data3.length > 0) {
+                        var proveedorDropdown = $('#proveedorDropdown'); // Dropdown de proveedores
+                        proveedorDropdown.empty(); // Limpiar opciones anteriores
+                        proveedorDropdown.append('<option value="">Seleccione un proveedor</option>'); // Opción por defecto
+
+                        // Recorrer proveedores y agregar opciones
+                        response.data3.forEach(function (proveedor) {
+                            proveedorDropdown.append('<option value="' + proveedor.id_proveedor + '">' + proveedor.nombre + '</option>');
+                        });
+                    }
+                },
+                error: function () {
+                    alert('Error al cargar los proveedores.');
+                }
+            });
+
+            // Cargar las categorías en el dropdown
+            $.ajax({
+                url: '@Url.Action("Listar", "Producto")', // Ruta para obtener las categorías
+                type: 'GET',
+                dataType: 'json',
+                success: function (response) {
+                    if (response.data4 && response.data4.length > 0) {
+                        var categoriaDropdown = $('#categoriaDropdown'); // Dropdown de categorías
+                        categoriaDropdown.empty(); // Limpiar opciones anteriores
+                        categoriaDropdown.append('<option value="">Seleccione una categoría</option>'); // Opción por defecto
+
+                        // Recorrer categorías y agregar opciones
+                        response.data4.forEach(function (categoria) {
+                            categoriaDropdown.append('<option value="' + categoria.id_categoria + '">' + categoria.nombre + '</option>');
+                        });
+                    }
+                },
+                error: function () {
+                    alert('Error al cargar las categorías.');
+                }
+            });
+        });
+
+
+
+        function AbrirRegistro($id_producto) {
+            if ($id_producto != "") {
+                jQuery.ajax({
+                    url: "@Url.Action("Consultar", "Producto")" + "?id_producto=" + $id_producto,
+                    type: "GET",
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (data) {
+                        if (data != null) {
+                            $("#id_producto").attr("readonly", true);
+
+                            $("#id_producto").val(data.id_producto);
+
+                            $("#producto").val(data.nombre);
+                            $("#descripcion").val(data.descripcion);
+                            $("#precio").val(data.precio);
+                            $("#stock").val(data.stock);
+                            $("#marca").val(data.id_marca); // Asignar valor de la marca al select
+                            $("#proveedor").val(data.id_proveedor); // Asignar valor del proveedor al select
+                            $("#categoria").val(data.id_categoria); // Asignar valor de la categoría al select
+                        }
+                    }
+                });
+                $(".modal-title").text("Editar Producto");
+                $("#btn_grabar").html("<i class='fas fa-save'></i> Guardar Cambios");
+            } else {
+                // Limpiar los campos
+                $("#id_producto").attr("readonly", false);
+
+                $("#id_producto").val("");
+                $("#producto").val("");
+                $("#descripcion").val("");
+                $("#precio").val("");
+                $("#stock").val("");
+                $("#marca").val(""); // Limpiar selección de marca
+                $("#proveedor").val(""); // Limpiar selección de proveedor
+                $("#categoria").val(""); // Limpiar selección de categoría
+
+                $(".modal-title").text("Registrar Producto");
+                $("#btn_grabar").html("<i class='fas fa-save'></i> Guardar Datos");
+            }
+            $("#FormularioCategoria").modal("show");
+        }
+
+
+        $("#btn_grabar").click(function (e) {
+            let $producto = {
+                "id_producto": $("#id_producto").val(),
+                "nombre": $("#nombre").val(),
+                "descripcion": $("#descripcion").val(),
+                "precio": $("#precio").val(),
+                "stock": $("#stock").val(),
+                "id_marca": $("#marcaDropdown").val(),
+                "id_proveedor": $("#proveedorDropdown").val(),
+                "id_categoria": $("#categoriaDropdown").val(),
+            };
+
+            jQuery.ajax({
+                url: "@Url.Action("Grabar", "Producto")",
+                type: "POST",
+                data: JSON.stringify($producto),
+                dataType: "json",
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    console.log("Respuesta del servidor:", data); // Ver respuesta completa en consola
+
+                    if (data.resultado) {
+                        // Si la operación fue exitosa
+                        $("#dataTable").DataTable().ajax.reload();
+                        $("#FormularioCategoria").modal("hide");
+
+                        Swal.fire(
+                            '¡Éxito!',
+                            'El producto se ha registrado correctamente.',
+                            'success'
+                        );
+                    } else {
+                        // Si no fue exitosa, mostramos el mensaje de error
+                        Swal.fire(
+                            'Error',
+                            'No fue posible grabar la información. Detalles: ' + (data.mensaje || 'Por favor, intente nuevamente o contacte al soporte.'),
+                            'error'
+                        );
+                    }
+                },
+                error: function (error) {
+                    console.error("Error en la llamada AJAX:", error.responseText);
+
+                    let errorMessage = "Ocurrió un error desconocido. Por favor, intente nuevamente.";
+
+                    if (error.responseText) {
+                        errorMessage = "Error: " + error.responseText;
+                    } else if (error.status === 500) {
+                        errorMessage = "Error interno del servidor. Intente más tarde.";
+                    } else if (error.status === 404) {
+                        errorMessage = "El recurso solicitado no se encuentra.";
+                    } else if (error.status === 0) {
+                        errorMessage = "No se pudo conectar al servidor. Verifique su conexión a internet.";
+                    }
+
+                    Swal.fire(
+                        'Error',
+                        errorMessage,
+                        'error'
+                    );
+                }
+            });
+        });
+
+
+        function Eliminar($id_producto) {
+            Swal.fire({
+                title: '¿Seguro de eliminar?',
+                text: "¡Esta acción no se puede deshacer!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    jQuery.ajax({
+                        url: "@Url.Action("Borrar", "Producto")?id_producto=" + $id_producto, // Se mantiene esta línea con comillas simples en Razor
+                        type: "GET",
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8",
+                        success: function (data) {
+                            if (data.resultado) {
+                                $("#dataTable").DataTable().ajax.reload();
+                                Swal.fire(
+                                    'Eliminado',
+                                    'La categoría ha sido eliminada.',
+                                    'success'
+                                );
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+
+    </script>
+}
+

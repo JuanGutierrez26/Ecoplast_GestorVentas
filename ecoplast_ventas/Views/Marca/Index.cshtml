@@ -1,0 +1,236 @@
+﻿@model ecoplast_ventas.Models.Marca
+
+@{
+    ViewData["Title"] = "Marca";
+    Layout = "~/Views/Shared/_Layout.cshtml";
+}
+
+
+@section EstiloDT {
+    <link rel="stylesheet" href="~/lib/datatables.net/css/jquery.dataTables.min.css" />
+}
+
+<hr />
+
+<div class="card shadow mb-4">
+    <div class="card-header py-3">
+        <h6 class="m-0 font-weight-bold text-primary">Tabla Marca</h6>
+    </div>
+    <div class="card-body">
+        <div class="table-responsive">
+            <table class="table table-bordered" id="dataTable" width="100%" cellspacing="0">
+                <thead>
+                    <tr>
+                        <td>@Html.DisplayNameFor(mar => mar.id_marca)</td>
+                        <td>@Html.DisplayNameFor(mar => mar.nombre)</td>
+                        <td>Acciones</td>
+                    </tr>
+                </thead>
+                <tbody>
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>
+
+<div class="modal fade" id="FormularioCategoria" data-bs-backdrop="static" data-bs-keyboard="false" tabindex="-1"
+     aria-labelledby="staticBackdropLabel" aria-hidden="true">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" id="exampleModalLabel"></h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Close"></button>
+            </div>
+            <div class="modal-body">
+                <div class="row">
+                    <div class="col-sm-12">
+                        <form>
+                            <div class="form-group">
+                                <label asp-for="id_marca" class="control-label"></label>
+                                <input asp-for="id_marca" class="form-control" />
+                                <span asp-validation-for="id_marca" class="text-danger"></span>
+
+                                <label asp-for="nombre" class="control-label"></label>
+                                <input asp-for="nombre" class="form-control" />
+                                <span asp-validation-for="nombre" class="text-danger"></span>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" id="btn_cerrar" class="btn btn-outline-secondary" data-bs-dismiss="modal">Cerrar</button>
+                <button type="button" id="btn_grabar" class="btn btn-outline-primary"></button>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+@section Scripts {
+    <script src="~/lib/datatables.net/js/jquery.dataTables.min.js"></script>
+    <script src="~/lib/datatables.net/js/dataTables.buttons.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jszip/3.10.0/jszip.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/pdfmake.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/pdfmake/0.2.7/vfs_fonts.js"></script>
+
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.html5.min.js"></script>
+    <script src="https://cdn.datatables.net/buttons/2.4.1/js/buttons.print.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script>
+        $(document).ready(function () {
+            $("#dataTable").DataTable({
+                "ajax": {
+                    "url": "@Url.Action("Listar", "Marca")",
+                    "type": "GET",
+                    "dataType": "json"
+                },
+                "columns": [
+                    { "data": "id_marca" },
+                    { "data": "nombre" },
+                    {
+                        "data": "id_marca", "render": function (data) {
+                            return "<button class='btn btn-outline-success' type='button' onclick='AbrirRegistro(\"" + data + "\")'><i class='fas fa-edit'></i></button>" +
+                                "<button class='btn btn-outline-danger' type='button' onclick='Eliminar(\"" + data + "\")'> <i class='fas fa-trash-alt'></i></button>"
+
+                        },
+                    }
+                ],
+                "order": [[0, "asc"]],
+                dom: "Bfrtip",
+                buttons: [
+                    {
+                        text: "Registrar Marca",
+                        attr: { class: "btn btn-outline-primary" },
+                        action: function () {
+                            AbrirRegistro("")
+                        }
+                    },
+                    {
+                        extend: "excelHtml5",
+                        text: '<i class="fas fa-file-excel"></i> Exportar a Excel',
+                        attr: { class: "btn btn-success" },
+                        exportOptions: {
+                            columns: [0, 1] // Exporta las columnas de id_categoria y nombre
+                        }
+                    },
+                    {
+                        extend: "pdfHtml5",
+                        text: '<i class="fas fa-file-pdf"></i> Exportar a PDF',
+                        attr: { class: "btn btn-danger" },
+                        exportOptions: {
+                            columns: [0, 1] // Exporta las columnas de id_categoria y nombre
+                        }
+                    }
+                ]
+            });
+        });
+
+
+
+        function AbrirRegistro($id_marca) {
+            if ($id_marca != "") {
+                jQuery.ajax({
+                    url: "@Url.Action("Consultar", "Marca")" + "?id_marca=" + $id_marca,
+                    type: "GET",
+                    dataType: "json",
+                    contentType: "application/json; charset=utf-8",
+                    success: function (data) {
+                        if (data != null) {
+                            $("#id_marca").attr("readonly", true);
+
+                            $("#id_marca").val(data.id_marca);
+
+                            $("#nombre").val(data.nombre);
+                        }
+                    }
+                });
+                $(".modal-title").text("Editar Marca");
+                $("#btn_grabar").html("<i class='fas fa-save'></i> Guardar Cambios");
+            } else {
+                $("#id_marca").attr("readonly", false);
+
+                $("#id_marca").val("");
+                $("#nombre").val("");
+
+                $(".modal-title").text("Registrar Marca");
+                $("#btn_grabar").html("<i class='fas fa-save'></i> Guardar Datos");
+            }
+            $("#FormularioCategoria").modal("show");
+
+        }
+
+        $("#btn_grabar").click(function (e) {
+            let $marca = {
+                "id_marca": $("#id_marca").val(),
+                "nombre": $("#nombre").val(),
+            };
+
+            jQuery.ajax({
+                url: "@Url.Action("Grabar", "Marca")",
+                type: "POST",
+                data: JSON.stringify($marca),
+                dataType: "json",
+                contentType: "application/json; charset=utf-8",
+                success: function (data) {
+                    console.log(data);
+                    if (data.resultado) {
+                        // Recargar la tabla
+                        $("#dataTable").DataTable().ajax.reload();
+                        // Ocultar el formulario
+                        $("#FormularioCategoria").modal("hide");
+
+                        // Mostrar el SweetAlert de éxito
+                        Swal.fire(
+                            '¡Éxito!',
+                            'La marca se ha registrado correctamente.',
+                            'success'
+                        );
+                    } else {
+                        alert("No fue posible grabar la información");
+                    }
+                },
+                error: function (error) {
+                    console.error("Error en la llamada AJAX:", error.responseText);
+                    alert("Ocurrió un error: " + error.responseText);
+                }
+            });
+        });
+
+
+        function Eliminar($id_marca) {
+            Swal.fire({
+                title: '¿Seguro de eliminar?',
+                text: "¡Esta acción no se puede deshacer!",
+                icon: 'warning',
+                showCancelButton: true,
+                confirmButtonText: 'Sí, eliminar',
+                cancelButtonText: 'Cancelar',
+                reverseButtons: true
+            }).then((result) => {
+                if (result.isConfirmed) {
+                    jQuery.ajax({
+                        url: "@Url.Action("Borrar", "Marca")?id_marca=" + $id_marca, // Se mantiene esta línea con comillas simples en Razor
+                        type: "GET",
+                        dataType: "json",
+                        contentType: "application/json; charset=utf-8",
+                        success: function (data) {
+                            if (data.resultado) {
+                                $("#dataTable").DataTable().ajax.reload();
+                                Swal.fire(
+                                    'Eliminado',
+                                    'La marca ha sido eliminada.',
+                                    'success'
+                                );
+                            }
+                        }
+                    });
+                }
+            });
+        }
+
+
+    </script>
+}
+
